@@ -1,6 +1,7 @@
 // lib/screens/agenda/agenda_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/agenda_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
@@ -11,6 +12,7 @@ import 'agenda_form_screen.dart';
 
 class AgendaListScreen extends StatefulWidget {
   const AgendaListScreen({super.key});
+
   @override
   State<AgendaListScreen> createState() => _AgendaListScreenState();
 }
@@ -25,10 +27,13 @@ class _AgendaListScreenState extends State<AgendaListScreen> {
     super.didChangeDependencies();
     if (!_initialized) {
       _initialized = true;
-      context.read<AgendaProvider>().fetchAgendas();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<AgendaProvider>().fetchAgendas();
+      });
     }
   }
 
+  // Fungsi untuk memfilter list berdasarkan status dan pencarian
   List<AgendaModel> _filtered(List<AgendaModel> all) {
     return all.where((a) {
       final matchStatus = _filter == 'all' || a.status == _filter;
@@ -49,7 +54,10 @@ class _AgendaListScreenState extends State<AgendaListScreen> {
       appBar: AppBar(
         title: const Text('Manajemen Agenda'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: prov.fetchAgendas),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: prov.fetchAgendas,
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -59,8 +67,14 @@ class _AgendaListScreenState extends State<AgendaListScreen> {
         ).then((_) => prov.fetchAgendas()),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Tambah Agenda',
-          style: TextStyle(color: Colors.white, fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+        label: const Text(
+          'Tambah Agenda',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -75,7 +89,9 @@ class _AgendaListScreenState extends State<AgendaListScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: prov.isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
                 : prov.error != null
                     ? ErrorState(message: prov.error!, onRetry: prov.fetchAgendas)
                     : filtered.isEmpty
@@ -88,12 +104,12 @@ class _AgendaListScreenState extends State<AgendaListScreen> {
                             onRefresh: prov.fetchAgendas,
                             color: AppColors.primary,
                             child: ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), // Padding bawah agar tidak tertutup FAB
                               itemCount: filtered.length,
                               separatorBuilder: (_, __) => const SizedBox(height: 10),
                               itemBuilder: (ctx, i) => _AgendaCard(
                                 agenda: filtered[i],
-                                isAdmin: auth.isAdmin,
+                                isAdmin: auth.isAdmin, // Kirim status admin
                                 onRefresh: prov.fetchAgendas,
                               ),
                             ),
@@ -110,7 +126,11 @@ class _AgendaCard extends StatelessWidget {
   final bool isAdmin;
   final VoidCallback onRefresh;
 
-  const _AgendaCard({required this.agenda, required this.isAdmin, required this.onRefresh});
+  const _AgendaCard({
+    required this.agenda,
+    required this.isAdmin,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +142,7 @@ class _AgendaCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Bagian Header Card (Icon, Nama, Status)
             Row(
               children: [
                 Container(
@@ -138,7 +159,8 @@ class _AgendaCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(agenda.namaKegiatan,
+                      Text(
+                        agenda.namaKegiatan,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -149,7 +171,8 @@ class _AgendaCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(agenda.tuanRumah,
+                      Text(
+                        agenda.tuanRumah,
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -163,11 +186,14 @@ class _AgendaCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
+            
+            // Bagian Info Tambahan (Jadwal & PDF)
             Row(
               children: [
                 const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textHint),
                 const SizedBox(width: 4),
-                Text('Jadwal: ${AppHelpers.formatDate(agenda.jadwal)}',
+                Text(
+                  'Jadwal: ${AppHelpers.formatDate(agenda.jadwal)}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -177,7 +203,8 @@ class _AgendaCard extends StatelessWidget {
                 const Spacer(),
                 const Icon(Icons.picture_as_pdf_outlined, size: 13, color: AppColors.rejected),
                 const SizedBox(width: 4),
-                const Text('PDF tersedia',
+                const Text(
+                  'PDF tersedia',
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.rejected,
@@ -186,13 +213,16 @@ class _AgendaCard extends StatelessWidget {
                 ),
               ],
             ),
+            
+            // Info User jika ada
             if (agenda.username != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
                   const Icon(Icons.person_outline, size: 13, color: AppColors.textHint),
                   const SizedBox(width: 4),
-                  Text('@${agenda.username}',
+                  Text(
+                    '@${agenda.username}',
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textHint,
@@ -202,14 +232,18 @@ class _AgendaCard extends StatelessWidget {
                 ],
               ),
             ],
+            
             const SizedBox(height: 10),
             const Divider(height: 1),
             const SizedBox(height: 8),
+            
+            // Row Aksi (Verifikasi, Edit, Hapus)
             VerificationActionRow(
               status: agenda.status,
               isAdmin: isAdmin,
               onVerify: isAdmin ? () async {
-                final ok = await AppHelpers.showConfirmDialog(context,
+                final ok = await AppHelpers.showConfirmDialog(
+                  context,
                   title: 'Verifikasi Agenda',
                   content: 'Verifikasi agenda "${agenda.namaKegiatan}"?',
                   confirmText: 'Verifikasi',
@@ -217,11 +251,14 @@ class _AgendaCard extends StatelessWidget {
                 );
                 if (ok) {
                   final res = await prov.verifyAgenda(agenda.uuid);
-                  if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  if (context.mounted) {
+                    AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  }
                 }
               } : null,
               onReject: isAdmin ? () async {
-                final ok = await AppHelpers.showConfirmDialog(context,
+                final ok = await AppHelpers.showConfirmDialog(
+                  context,
                   title: 'Tolak Agenda',
                   content: 'Tolak agenda "${agenda.namaKegiatan}"?',
                   confirmText: 'Tolak',
@@ -229,27 +266,35 @@ class _AgendaCard extends StatelessWidget {
                 );
                 if (ok) {
                   final res = await prov.rejectAgenda(agenda.uuid);
-                  if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  if (context.mounted) {
+                    AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  }
                 }
               } : null,
               onCancelVerify: isAdmin ? () async {
-                final ok = await AppHelpers.showConfirmDialog(context,
+                final ok = await AppHelpers.showConfirmDialog(
+                  context,
                   title: 'Batalkan Verifikasi',
                   content: 'Status akan kembali ke Pending.',
                 );
                 if (ok) {
                   final res = await prov.cancelVerifyAgenda(agenda.uuid);
-                  if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  if (context.mounted) {
+                    AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  }
                 }
               } : null,
               onCancelReject: isAdmin ? () async {
-                final ok = await AppHelpers.showConfirmDialog(context,
+                final ok = await AppHelpers.showConfirmDialog(
+                  context,
                   title: 'Pulihkan Agenda',
                   content: 'Status akan kembali ke Pending.',
                 );
                 if (ok) {
                   final res = await prov.cancelRejectAgenda(agenda.uuid);
-                  if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  if (context.mounted) {
+                    AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  }
                 }
               } : null,
               onEdit: agenda.status != 'verified' ? () => Navigator.push(
@@ -257,7 +302,8 @@ class _AgendaCard extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => AgendaFormScreen(agenda: agenda)),
               ).then((_) => onRefresh()) : null,
               onDelete: () async {
-                final ok = await AppHelpers.showConfirmDialog(context,
+                final ok = await AppHelpers.showConfirmDialog(
+                  context,
                   title: 'Hapus Agenda',
                   content: 'Agenda akan dihapus permanen.',
                   confirmText: 'Hapus',
@@ -265,7 +311,9 @@ class _AgendaCard extends StatelessWidget {
                 );
                 if (ok) {
                   final res = await prov.deleteAgenda(agenda.uuid);
-                  if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  if (context.mounted) {
+                    AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                  }
                 }
               },
             ),

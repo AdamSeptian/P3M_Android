@@ -1,9 +1,10 @@
 // lib/widgets/app_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
 import '../services/api_service.dart';
-import '../utils/helpers.dart';
+import '../utils/helpers.dart'; // Asumsi helpers sudah ada
 
 // ─── LOADING OVERLAY ──────────────────────────────────────────────────────────
 class LoadingOverlay extends StatelessWidget {
@@ -113,55 +114,78 @@ class ErrorState extends StatelessWidget {
 
 // ─── NETWORK IMAGE ────────────────────────────────────────────────────────────
 class AppNetworkImage extends StatelessWidget {
-  final String? url;
+  final String url;
   final double? width;
   final double? height;
-  final BoxFit fit;
   final BorderRadius? borderRadius;
 
   const AppNetworkImage({
     super.key,
-    this.url,
+    required this.url,
     this.width,
     this.height,
-    this.fit = BoxFit.cover,
     this.borderRadius,
   });
 
+  // Fungsi untuk mengambil token dari storage
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(AppConstants.tokenKey);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final widget = url != null && url!.isNotEmpty
-        ? CachedNetworkImage(
-            imageUrl: url!,
-            width: width,
-            height: height,
-            fit: fit,
-            httpHeaders: {
-              'Cookie': ApiService().sessionCookie ?? '',
-            },
-            placeholder: (_, __) => Container(
-              color: AppColors.border,
-              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-            errorWidget: (_, __, ___) => Container(
-              color: AppColors.border,
-              child: const Icon(Icons.broken_image_outlined, color: AppColors.textHint),
-            ),
-          )
-        : Container(
-            width: width,
-            height: height,
-            color: AppColors.border,
-            child: const Icon(Icons.image_outlined, color: AppColors.textHint),
-          );
+    return FutureBuilder<String?>(
+      future: _getToken(),
+      builder: (context, snapshot) {
+        // Siapkan Header
+        final headers = <String, String>{};
+        if (snapshot.hasData && snapshot.data != null) {
+          headers['Authorization'] = 'Bearer ${snapshot.data}'; // Kirim Token ke Backend!
+        }
 
-    if (borderRadius != null) {
-      return ClipRRect(borderRadius: borderRadius!, child: widget);
-    }
-    return widget;
+        final img = Image.network(
+          url,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          headers: headers, // Pasang header di sini
+          errorBuilder: (context, error, stackTrace) {
+            // Tampilkan icon jika gambar ditolak backend (403) atau tidak ketemu (404)
+            return Container(
+              width: width ?? 50,
+              height: height ?? 50,
+              decoration: BoxDecoration(
+                color: AppColors.border.withOpacity(0.5),
+                borderRadius: borderRadius,
+              ),
+              child: const Icon(
+                Icons.person,
+                color: AppColors.textHint,
+                size: 24,
+              ),
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return SizedBox(
+              width: width ?? 50,
+              height: height ?? 50,
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            );
+          },
+        );
+
+        if (borderRadius != null) {
+          return ClipRRect(borderRadius: borderRadius!, child: img);
+        }
+        return img;
+      },
+    );
   }
 }
-
 // ─── SECTION HEADER ──────────────────────────────────────────────────────────
 class SectionHeader extends StatelessWidget {
   final String title;

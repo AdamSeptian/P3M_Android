@@ -23,8 +23,8 @@ class AppConstants {
   static const String appName      = 'P3M Admin';
   static const String appSubtitle  = 'Pusat Penelitian & Pengabdian Masyarakat';
 
-  // ─── COOKIE KEY ──────────────────────────────────────────────────────────────
-  static const String sessionCookieKey = 'p3m_session';
+  // ─── TOKEN KEY (MIGRASI DARI COOKIE) ─────────────────────────────────────────
+  static const String tokenKey = 'p3m_jwt_token';
 }
 
 class AppColors {

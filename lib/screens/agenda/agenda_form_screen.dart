@@ -3,16 +3,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
-import '../../models/user_model.dart';
+
+import '../../models/user_model.dart'; // Menggunakan model yang sudah disatukan
 import '../../providers/agenda_provider.dart';
+import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/app_widgets.dart';
-import '../../services/api_service.dart';
 
 class AgendaFormScreen extends StatefulWidget {
   final AgendaModel? agenda;
   const AgendaFormScreen({super.key, this.agenda});
+
   @override
   State<AgendaFormScreen> createState() => _AgendaFormScreenState();
 }
@@ -37,7 +39,9 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
       if (widget.agenda!.jadwal.isNotEmpty) {
         try {
           _selectedDate = DateTime.parse(widget.agenda!.jadwal);
-        } catch (_) {}
+        } catch (_) {
+          // Abaikan jika format tanggal tidak valid
+        }
       }
     }
   }
@@ -54,6 +58,7 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
+    
     if (result != null && result.files.single.path != null) {
       setState(() {
         _pdfFile = File(result.files.single.path!);
@@ -75,21 +80,26 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    
     if (_selectedDate == null) {
       AppHelpers.showSnackBar(context, 'Pilih jadwal terlebih dahulu', isError: true);
       return;
     }
+    
     if (!isEdit && _pdfFile == null) {
       AppHelpers.showSnackBar(context, 'Upload file PDF terlebih dahulu', isError: true);
       return;
     }
 
     setState(() => _isSubmitting = true);
+    
     final prov = context.read<AgendaProvider>();
     final jadwal = '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
 
@@ -100,21 +110,24 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
         namaKegiatan: _namaCtrl.text.trim(),
         tuanRumah: _tuanRumahCtrl.text.trim(),
         jadwal: jadwal,
-        pdfFile: _pdfFile,
+        pdfFile: _pdfFile, // Bisa null jika tidak ada file baru yang diunggah
       );
     } else {
       res = await prov.createAgenda(
         namaKegiatan: _namaCtrl.text.trim(),
         tuanRumah: _tuanRumahCtrl.text.trim(),
         jadwal: jadwal,
-        pdfFile: _pdfFile!,
+        pdfFile: _pdfFile!, // Wajib ada untuk create
       );
     }
 
     setState(() => _isSubmitting = false);
+    
     if (mounted) {
       AppHelpers.showSnackBar(context, res.message, isError: res.isError);
-      if (res.isSuccess) Navigator.pop(context);
+      if (res.isSuccess) {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -166,7 +179,7 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
                       child: Row(
                         children: [
                           const Icon(Icons.calendar_today_outlined,
-                            size: 20, color: AppColors.textHint),
+                              size: 20, color: AppColors.textHint),
                           const SizedBox(width: 12),
                           Text(
                             _selectedDate != null
@@ -209,7 +222,7 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Icons.picture_as_pdf_outlined,
-                              color: AppColors.rejected, size: 24),
+                                color: AppColors.rejected, size: 24),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -280,14 +293,15 @@ class _AgendaFormScreenState extends State<AgendaFormScreen> {
   }
 
   Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-        fontFamily: 'Poppins',
-      ),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+            fontFamily: 'Poppins',
+          ),
+        ),
+      );
 }

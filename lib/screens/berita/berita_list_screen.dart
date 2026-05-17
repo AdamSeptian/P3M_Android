@@ -1,6 +1,7 @@
 // lib/screens/berita/berita_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/berita_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/user_provider.dart';
@@ -13,6 +14,7 @@ import 'berita_detail_screen.dart';
 
 class BeritaListScreen extends StatefulWidget {
   const BeritaListScreen({super.key});
+
   @override
   State<BeritaListScreen> createState() => _BeritaListScreenState();
 }
@@ -27,12 +29,16 @@ class _BeritaListScreenState extends State<BeritaListScreen> {
     super.didChangeDependencies();
     if (!_initialized) {
       _initialized = true;
-      context.read<BeritaProvider>().fetchBeritas();
-      context.read<KategoriProvider>().fetchKategoris();
-      context.read<TagProvider>().fetchTags();
+      // Gunakan addPostFrameCallback agar state tidak bentrok saat build UI
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<BeritaProvider>().fetchBeritas();
+        context.read<KategoriProvider>().fetchKategoris();
+        context.read<TagProvider>().fetchTags();
+      });
     }
   }
 
+  // Filter list berita berdasarkan status dan pencarian judul
   List<BeritaModel> _filtered(List<BeritaModel> all) {
     return all.where((b) {
       final matchStatus = _filter == 'all' || b.status == _filter;
@@ -65,8 +71,14 @@ class _BeritaListScreenState extends State<BeritaListScreen> {
         ).then((_) => prov.fetchBeritas()),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Tambah Berita',
-          style: TextStyle(color: Colors.white, fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+        label: const Text(
+          'Tambah Berita',
+          style: TextStyle(
+            color: Colors.white, 
+            fontFamily: 'Poppins', 
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -136,7 +148,7 @@ class _BeritaCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
+            // ─── IMAGE HEADER ──────────────────────────────────────────────────
             if (berita.url.isNotEmpty)
               AppNetworkImage(
                 url: berita.url,
@@ -147,6 +159,8 @@ class _BeritaCard extends StatelessWidget {
                   topRight: Radius.circular(12),
                 ),
               ),
+              
+            // ─── KONTEN CARD ───────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -156,7 +170,8 @@ class _BeritaCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       AppHelpers.statusChip(berita.status),
-                      Text(AppHelpers.formatDateTime(berita.createdAt),
+                      Text(
+                        AppHelpers.formatDateTime(berita.createdAt),
                         style: const TextStyle(
                           fontSize: 10,
                           color: AppColors.textHint,
@@ -166,7 +181,10 @@ class _BeritaCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(berita.judulBerita,
+                  
+                  // Judul
+                  Text(
+                    berita.judulBerita,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -177,14 +195,19 @@ class _BeritaCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  
+                  // Author
                   if (berita.username != null)
-                    Text('oleh @${berita.username}',
+                    Text(
+                      'oleh @${berita.username}',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
                         fontFamily: 'Poppins',
                       ),
                     ),
+                    
+                  // Kategori Chips
                   if (berita.kategoris.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Wrap(
@@ -195,7 +218,8 @@ class _BeritaCard extends StatelessWidget {
                           color: AppColors.primaryLight.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(k.namaKategori,
+                        child: Text(
+                          k.namaKategori,
                           style: const TextStyle(
                             fontSize: 10,
                             color: AppColors.primaryLight,
@@ -206,14 +230,18 @@ class _BeritaCard extends StatelessWidget {
                       )).toList(),
                     ),
                   ],
+                  
                   const SizedBox(height: 10),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
+                  
+                  // ─── ACTION ROW ──────────────────────────────────────────────
                   VerificationActionRow(
                     status: berita.status,
                     isAdmin: isAdmin,
                     onVerify: isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Verifikasi Berita',
                         content: 'Verifikasi berita "${berita.judulBerita}"?',
                         confirmText: 'Verifikasi',
@@ -221,11 +249,14 @@ class _BeritaCard extends StatelessWidget {
                       );
                       if (ok) {
                         final res = await prov.verifyBerita(berita.uuid);
-                        if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        if (context.mounted) {
+                          AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        }
                       }
                     } : null,
                     onReject: isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Tolak Berita',
                         content: 'Tolak berita "${berita.judulBerita}"?',
                         confirmText: 'Tolak',
@@ -233,27 +264,35 @@ class _BeritaCard extends StatelessWidget {
                       );
                       if (ok) {
                         final res = await prov.rejectBerita(berita.uuid);
-                        if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        if (context.mounted) {
+                          AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        }
                       }
                     } : null,
                     onCancelVerify: isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Batalkan Verifikasi',
                         content: 'Status akan kembali ke Pending.',
                       );
                       if (ok) {
                         final res = await prov.cancelVerifyBerita(berita.uuid);
-                        if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        if (context.mounted) {
+                          AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        }
                       }
                     } : null,
                     onCancelReject: isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Pulihkan Berita',
                         content: 'Status akan kembali ke Pending.',
                       );
                       if (ok) {
                         final res = await prov.cancelRejectBerita(berita.uuid);
-                        if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        if (context.mounted) {
+                          AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        }
                       }
                     } : null,
                     onEdit: berita.status != 'verified' ? () => Navigator.push(
@@ -261,7 +300,8 @@ class _BeritaCard extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => BeritaFormScreen(berita: berita)),
                     ).then((_) => onRefresh()) : null,
                     onDelete: () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Hapus Berita',
                         content: 'Berita akan dihapus permanen.',
                         confirmText: 'Hapus',
@@ -269,7 +309,9 @@ class _BeritaCard extends StatelessWidget {
                       );
                       if (ok) {
                         final res = await prov.deleteBerita(berita.uuid);
-                        if (context.mounted) AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        if (context.mounted) {
+                          AppHelpers.showSnackBar(context, res.message, isError: res.isError);
+                        }
                       }
                     },
                   ),

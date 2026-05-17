@@ -1,6 +1,7 @@
 // lib/screens/berita/berita_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../models/user_model.dart';
 import '../../providers/berita_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -11,6 +12,7 @@ import 'berita_form_screen.dart';
 
 class BeritaDetailScreen extends StatelessWidget {
   final BeritaModel berita;
+  
   const BeritaDetailScreen({super.key, required this.berita});
 
   @override
@@ -21,6 +23,7 @@ class BeritaDetailScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
+          // ─── HEADER GAMBAR ───────────────────────────────────────────────────
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
@@ -30,17 +33,21 @@ class BeritaDetailScreen extends StatelessWidget {
                   : Container(color: AppColors.border),
             ),
           ),
+          
+          // ─── KONTEN DETAIL ───────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Status & Tanggal
                   Row(
                     children: [
                       AppHelpers.statusChip(berita.status),
                       const Spacer(),
-                      Text(AppHelpers.formatDateTime(berita.createdAt),
+                      Text(
+                        AppHelpers.formatDateTime(berita.createdAt),
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textHint,
@@ -50,7 +57,10 @@ class BeritaDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(berita.judulBerita,
+                  
+                  // Judul Berita
+                  Text(
+                    berita.judulBerita,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -59,12 +69,15 @@ class BeritaDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  
+                  // Pembuat Berita (Username)
                   if (berita.username != null)
                     Row(
                       children: [
                         const Icon(Icons.person_outline, size: 14, color: AppColors.textHint),
                         const SizedBox(width: 4),
-                        Text('@${berita.username}',
+                        Text(
+                          '@${berita.username}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -74,6 +87,8 @@ class BeritaDetailScreen extends StatelessWidget {
                       ],
                     ),
                   const SizedBox(height: 12),
+                  
+                  // Kategori
                   if (berita.kategoris.isNotEmpty) ...[
                     Wrap(
                       spacing: 6,
@@ -85,7 +100,8 @@ class BeritaDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: AppColors.primaryLight.withOpacity(0.3)),
                         ),
-                        child: Text(k.namaKategori,
+                        child: Text(
+                          k.namaKategori,
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.primaryLight,
@@ -97,6 +113,8 @@ class BeritaDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                   ],
+                  
+                  // Tags
                   if (berita.tags.isNotEmpty) ...[
                     Wrap(
                       spacing: 6,
@@ -107,7 +125,8 @@ class BeritaDetailScreen extends StatelessWidget {
                           color: AppColors.accentLight.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text('#${t.namaTag}',
+                        child: Text(
+                          '#${t.namaTag}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.accent,
@@ -118,9 +137,13 @@ class BeritaDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  
                   const Divider(),
                   const SizedBox(height: 12),
-                  Text(berita.isiBerita,
+                  
+                  // Isi Berita
+                  Text(
+                    berita.isiBerita,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.7,
@@ -131,12 +154,14 @@ class BeritaDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   const Divider(),
                   const SizedBox(height: 12),
-                  // Actions
+                  
+                  // ─── ACTION BUTTONS ──────────────────────────────────────────
                   VerificationActionRow(
                     status: berita.status,
                     isAdmin: auth.isAdmin,
                     onVerify: auth.isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Verifikasi Berita',
                         content: 'Verifikasi berita ini?',
                         confirmText: 'Verifikasi',
@@ -151,7 +176,8 @@ class BeritaDetailScreen extends StatelessWidget {
                       }
                     } : null,
                     onReject: auth.isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Tolak Berita',
                         content: 'Tolak berita ini?',
                         confirmText: 'Tolak',
@@ -166,7 +192,8 @@ class BeritaDetailScreen extends StatelessWidget {
                       }
                     } : null,
                     onCancelVerify: auth.isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Batalkan Verifikasi',
                         content: 'Status akan kembali ke Pending.',
                       );
@@ -179,7 +206,8 @@ class BeritaDetailScreen extends StatelessWidget {
                       }
                     } : null,
                     onCancelReject: auth.isAdmin ? () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Pulihkan Berita',
                         content: 'Status akan kembali ke Pending.',
                       );
@@ -196,7 +224,8 @@ class BeritaDetailScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => BeritaFormScreen(berita: berita)),
                     ) : null,
                     onDelete: () async {
-                      final ok = await AppHelpers.showConfirmDialog(context,
+                      final ok = await AppHelpers.showConfirmDialog(
+                        context,
                         title: 'Hapus Berita',
                         content: 'Berita akan dihapus permanen.',
                         confirmText: 'Hapus',

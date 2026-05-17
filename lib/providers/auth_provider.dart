@@ -24,8 +24,8 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Initialize ────────────────────────────────────────────────────────────
   Future<void> init() async {
-    await _api.loadCookie();
-    if (_api.hasSession) {
+    await _api.loadToken();
+    if (_api.hasToken) {
       await fetchCurrentUser();
     } else {
       _status = AuthStatus.unauthenticated;
@@ -47,6 +47,12 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (response.isSuccess) {
+      // Ambil accessToken dari body respons dan simpan
+      final token = response.data['accessToken'];
+      if (token != null) {
+        await _api.saveToken(token);
+      }
+      
       await fetchCurrentUser();
       return true;
     } else {
@@ -67,7 +73,7 @@ class AuthProvider extends ChangeNotifier {
         _errorMessage = 'Akses ditolak. Hanya admin dan humas yang dapat menggunakan aplikasi ini.';
         _currentUser = null;
         _status = AuthStatus.unauthenticated;
-        await _api.clearCookie();
+        await _api.clearToken();
       } else {
         _status = AuthStatus.authenticated;
         _errorMessage = null;
@@ -75,30 +81,26 @@ class AuthProvider extends ChangeNotifier {
     } else {
       _status = AuthStatus.unauthenticated;
       _currentUser = null;
-      await _api.clearCookie();
+      await _api.clearToken();
     }
     notifyListeners();
   }
 
   // ─── Logout ────────────────────────────────────────────────────────────────
   Future<void> logout() async {
-  // 1. Beritahu server untuk hapus session
-  final response = await _api.delete(AppConstants.logoutUrl);
+    final response = await _api.delete(AppConstants.logoutUrl);
   
-  if (response.isSuccess) {
-    // 2. Jika server berhasil hapus, hapus juga di lokal
-    await _api.clearCookie();
-    _currentUser = null;
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
-  } else {
-    // Jika gagal, mungkin cookie sudah expired atau server down
-    print("Logout gagal di server: ${response.message}");
-    // Tetap hapus lokal sebagai fail-safe
-    await _api.clearCookie();
-    _currentUser = null;
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
+    if (response.isSuccess) {
+      await _api.clearToken();
+      _currentUser = null;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    } else {
+      print("Logout gagal di server: ${response.message}");
+      await _api.clearToken();
+      _currentUser = null;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    }
   }
-}
 }

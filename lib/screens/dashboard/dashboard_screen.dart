@@ -7,7 +7,7 @@ import '../../providers/agenda_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../models/user_model.dart';
 import '../../utils/constants.dart';
-import '../../utils/helpers.dart';
+import '../../utils/helpers.dart'; // Asumsi helper tesedia
 import '../../widgets/app_widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -23,25 +23,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Menggunakan microtask agar pemanggilan data tidak mengganggu siklus build awal
     if (!_initialized) {
       _initialized = true;
       Future.microtask(() => _loadAll());
     }
   }
 
-  /// Memanggil API secara independen. 
-  /// Jika satu request lambat/timeout, yang lain tetap bisa tampil.
   Future<void> _loadAll() async {
     if (!mounted) return;
 
     final auth = context.read<AuthProvider>();
 
-    // Jalankan tanpa Future.wait agar tidak bottleneck
     context.read<BeritaProvider>().fetchBeritas();
     context.read<AgendaProvider>().fetchAgendas();
 
-    // Optimasi: Hanya fetch data user jika yang login adalah admin
     if (auth.isAdmin) {
       context.read<UserProvider>().fetchUsers();
     }
@@ -54,7 +49,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final agendaProv = context.watch<AgendaProvider>();
     final userProv = context.watch<UserProvider>();
 
-    // Loading status gabungan
     final isLoading = beritaProv.isLoading || agendaProv.isLoading;
 
     return Scaffold(
@@ -264,8 +258,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// --- SUB-WIDGETS (Sama seperti sebelumnya, ditambahkan proteksi Null Safety) ---
-
 class _StatCard extends StatelessWidget {
   final String label;
   final int value;
@@ -374,6 +366,7 @@ class _PendingUserTile extends StatelessWidget {
     leading: CircleAvatar(
       radius: 18,
       backgroundColor: AppColors.border,
+      // CachedNetworkImage provider
       backgroundImage: user.avatarUrl.isNotEmpty ? NetworkImage(user.avatarUrl) : null,
       child: user.avatarUrl.isEmpty ? const Icon(Icons.person, size: 18, color: AppColors.textHint) : null,
     ),
@@ -441,31 +434,27 @@ class _ProfileMenu extends StatelessWidget {
         ),
       ),
     ],
-    // Cari bagian ini di lib/screens/dashboard/dashboard_screen.dart
-
-onSelected: (val) async {
-  if (val == 'logout') {
-    final confirm = await AppHelpers.showConfirmDialog(
-      context,
-      title: 'Keluar',
-      content: 'Apakah Anda yakin ingin keluar?',
-      confirmText: 'Keluar',
-      confirmColor: AppColors.rejected,
-    );
-    
-    if (confirm == true && context.mounted) {
-      // 1. Panggil fungsi logout di provider
-      await context.read<AuthProvider>().logout();
-      
-      // 2. HARD RESET NAVIGASI ke halaman Login
-      if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login', // Sesuaikan dengan route login kamu di main.dart
-          (route) => false,
+    onSelected: (val) async {
+      if (val == 'logout') {
+        final confirm = await AppHelpers.showConfirmDialog(
+          context,
+          title: 'Keluar',
+          content: 'Apakah Anda yakin ingin keluar?',
+          confirmText: 'Keluar',
+          confirmColor: AppColors.rejected,
         );
+        
+        if (confirm == true && context.mounted) {
+          await context.read<AuthProvider>().logout();
+          
+          if (context.mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/login', // Sesuaikan dengan route login kamu di main.dart
+              (route) => false,
+            );
+          }
+        }
       }
-    }
-  }
-},
+    },
   );
 }

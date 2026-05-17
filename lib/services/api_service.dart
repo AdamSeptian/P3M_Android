@@ -1,7 +1,7 @@
 // lib/services/api_service.dart
 import 'dart:convert';
 import 'dart:io';
-import 'dart:async'; // Tambahkan ini untuk TimeoutException
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
@@ -11,54 +11,40 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  String? _sessionCookie;
+  String? _token;
   
-  // Gunakan durasi yang lebih masuk akal (30 - 60 detik)
   final Duration _timeoutDuration = const Duration(seconds: 30);
 
-  // ─── Cookie Management ────────────────────────────────────────────────────
-  Future<void> loadCookie() async {
+  // ─── Token Management ────────────────────────────────────────────────────
+  Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
-    _sessionCookie = prefs.getString(AppConstants.sessionCookieKey);
+    _token = prefs.getString(AppConstants.tokenKey);
   }
 
-  Future<void> saveCookie(String cookie) async {
-    _sessionCookie = cookie;
+  Future<void> saveToken(String token) async {
+    _token = token;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.sessionCookieKey, cookie);
+    await prefs.setString(AppConstants.tokenKey, token);
   }
 
-  Future<void> clearCookie() async {
-    _sessionCookie = null;
+  Future<void> clearToken() async {
+    _token = null;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConstants.sessionCookieKey);
+    await prefs.remove(AppConstants.tokenKey);
   }
 
-  String? get sessionCookie => _sessionCookie;
-  bool get hasSession => _sessionCookie != null && _sessionCookie!.isNotEmpty;
+  String? get token => _token;
+  bool get hasToken => _token != null && _token!.isNotEmpty;
 
+  // Header dengan Bearer Token
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    if (_sessionCookie != null) 'Cookie': _sessionCookie!,
+    if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
   Map<String, String> get _headersForm => {
-    if (_sessionCookie != null) 'Cookie': _sessionCookie!,
+    if (_token != null) 'Authorization': 'Bearer $_token',
   };
-
-  void _extractCookie(http.Response response) {
-  final setCookie = response.headers['set-cookie'];
-  print("Header Set-Cookie: $setCookie"); // Cek apakah header ini muncul di console
-
-  if (setCookie != null && setCookie.isNotEmpty) {
-    final sessionMatch = RegExp(r'connect\.sid=[^;]+').firstMatch(setCookie);
-    if (sessionMatch != null) {
-      final cookieValue = sessionMatch.group(0)!;
-      print("Cookie ditemukan: $cookieValue");
-      saveCookie(cookieValue);
-    }
-  }
-}
 
   // ─── GET ──────────────────────────────────────────────────────────────────
   Future<ApiResponse> get(String url) async {
@@ -68,7 +54,6 @@ class ApiService {
         headers: _headers,
       ).timeout(_timeoutDuration);
       
-      _extractCookie(response);
       return ApiResponse(
         statusCode: response.statusCode,
         data: _parseBody(response.body),
@@ -92,7 +77,6 @@ class ApiService {
         body: jsonEncode(body),
       ).timeout(_timeoutDuration);
       
-      _extractCookie(response);
       return ApiResponse(
         statusCode: response.statusCode,
         data: _parseBody(response.body),
@@ -122,11 +106,9 @@ class ApiService {
         request.files.add(await http.MultipartFile.fromPath(imageField, imageFile.path));
       }
       
-      // Menaikkan timeout khusus upload file karena biasanya lebih berat
       final streamed = await request.send().timeout(const Duration(seconds: 60));
       final response = await http.Response.fromStream(streamed);
       
-      _extractCookie(response);
       return ApiResponse(
         statusCode: response.statusCode,
         data: _parseBody(response.body),
@@ -146,7 +128,6 @@ class ApiService {
         body: body != null ? jsonEncode(body) : null,
       ).timeout(_timeoutDuration);
       
-      _extractCookie(response);
       return ApiResponse(
         statusCode: response.statusCode,
         data: _parseBody(response.body),
@@ -173,7 +154,7 @@ class ApiService {
       }
       final streamed = await request.send().timeout(const Duration(seconds: 60));
       final response = await http.Response.fromStream(streamed);
-      _extractCookie(response);
+      
       return ApiResponse(
         statusCode: response.statusCode,
         data: _parseBody(response.body),
@@ -192,7 +173,6 @@ class ApiService {
         headers: _headers,
       ).timeout(_timeoutDuration);
       
-      _extractCookie(response);
       return ApiResponse(
         statusCode: response.statusCode,
         data: _parseBody(response.body),

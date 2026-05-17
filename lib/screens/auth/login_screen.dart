@@ -1,12 +1,14 @@
 // lib/screens/auth/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -26,11 +28,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Matikan keyboard sebelum login proses
+    FocusScope.of(context).unfocus();
+
     final auth = context.read<AuthProvider>();
     final ok = await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
+    
     if (!ok && mounted) {
-      AppHelpers.showSnackBar(context, auth.errorMessage ?? 'Login gagal', isError: true);
+      AppHelpers.showSnackBar(
+        context, 
+        auth.errorMessage ?? 'Login gagal. Periksa kembali email dan password.', 
+        isError: true,
+      );
     }
+    // Jika sukses, kita TIDAK perlu pakai Navigator.push. 
+    // main.dart akan secara otomatis mendeteksi perubahan status dan merender MainShell!
   }
 
   @override
@@ -40,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Background decorative circles
+            // ─── DEKORASI BACKGROUND ─────────────────────────────────────────
             Positioned(
               top: -60,
               right: -60,
@@ -65,10 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            // Main content
+            
+            // ─── KONTEN UTAMA ────────────────────────────────────────────────
             Column(
               children: [
-                // Header
+                // Header Tulisan
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
                   child: Column(
@@ -93,7 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(AppConstants.appName,
+                              Text(
+                                AppConstants.appName,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
@@ -101,7 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontFamily: 'Poppins',
                                 ),
                               ),
-                              Text(AppConstants.appSubtitle,
+                              Text(
+                                AppConstants.appSubtitle,
                                 style: const TextStyle(
                                   color: Colors.white60,
                                   fontSize: 10,
@@ -113,7 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                       const SizedBox(height: 40),
-                      const Text('Selamat Datang',
+                      const Text(
+                        'Selamat Datang',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -121,7 +138,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontFamily: 'Poppins',
                         ),
                       ),
-                      const Text('Masuk ke panel admin P3M',
+                      const Text(
+                        'Masuk ke panel admin P3M',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
@@ -132,7 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Form card
+                
+                // Form Login Card
                 Expanded(
                   child: Container(
                     decoration: const BoxDecoration(
@@ -150,7 +169,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 8),
-                            const Text('Email',
+                            const Text(
+                              'Email',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -173,7 +193,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 20),
-                            const Text('Password',
+                            
+                            const Text(
+                              'Password',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -203,6 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 32),
+                            
                             Consumer<AuthProvider>(
                               builder: (_, auth, __) => SizedBox(
                                 width: double.infinity,
@@ -218,7 +241,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : const Text('Masuk',
+                                      : const Text(
+                                          'Masuk',
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
@@ -229,6 +253,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 24),
+                            
+                            // Info Box
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(

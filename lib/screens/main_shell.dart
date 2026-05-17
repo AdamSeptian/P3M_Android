@@ -1,16 +1,20 @@
 // lib/screens/main_shell.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'berita/berita_list_screen.dart';
 import 'agenda/agenda_list_screen.dart';
-// import 'users/users_list_screen.dart';
-// import 'kategori/kategori_tag_screen.dart';
+
+// Pastikan file-file di bawah ini sudah kamu buat
+import 'users/users_list_screen.dart';
+import 'kategori/kategori_tag_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
   @override
   State<MainShell> createState() => _MainShellState();
 }
@@ -20,17 +24,20 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Pantau status otentikasi dan role
     final auth = context.watch<AuthProvider>();
     final isAdmin = auth.isAdmin;
 
+    // Daftar layar yang akan dirender ke dalam IndexedStack
     final screens = [
       const DashboardScreen(),
       const BeritaListScreen(),
       const AgendaListScreen(),
-      // if (isAdmin) const UsersListScreen(),
-      // if (isAdmin) const KategoriTagScreen(),
+      if (isAdmin) const UsersListScreen(),
+      if (isAdmin) const KategoriTagScreen(),
     ];
 
+    // Daftar item navigasi di bagian bawah
     final navItems = [
       const BottomNavigationBarItem(
         icon: Icon(Icons.dashboard_outlined),
@@ -47,19 +54,21 @@ class _MainShellState extends State<MainShell> {
         activeIcon: Icon(Icons.event_rounded),
         label: 'Agenda',
       ),
-      if (isAdmin) const BottomNavigationBarItem(
-        icon: Icon(Icons.people_outline),
-        activeIcon: Icon(Icons.people_rounded),
-        label: 'Pengguna',
-      ),
-      if (isAdmin) const BottomNavigationBarItem(
-        icon: Icon(Icons.label_outline),
-        activeIcon: Icon(Icons.label_rounded),
-        label: 'Kategori',
-      ),
+      if (isAdmin)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.people_outline),
+          activeIcon: Icon(Icons.people_rounded),
+          label: 'Pengguna',
+        ),
+      if (isAdmin)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.label_outline),
+          activeIcon: Icon(Icons.label_rounded),
+          label: 'Kategori',
+        ),
     ];
 
-    // Clamp index when switching roles
+    // Mencegah error index out of bounds jika role berubah saat runtime
     if (_currentIndex >= screens.length) {
       _currentIndex = 0;
     }
